@@ -24,7 +24,7 @@ public class PlayerController : MonoBehaviour, IRankingDecider
     float canMoveAngle = 90.0f; //コースの進行方向に対してこの角度異常曲がると加速できない
     float jumpBoardForce = 50.0f; //ジャンプ台での前進させる力
     public bool isStopping; //急停止しているかどうか
-    public bool isTurning; //曲がっているかどうか
+    public bool canTurn; //曲がっているかどうか
     bool onCourse; //コース上にいるかどうか
     bool onJumpBoard; //ジャンプ台に乗っているかどうか
 
@@ -50,17 +50,17 @@ public class PlayerController : MonoBehaviour, IRankingDecider
         if (onCourse == true)
         {
             rotationX = myTransform.eulerAngles.x;
-            isTurning = false;
+            canTurn = false;
             if (isStopping == false)
             {
                 // 左右のカーブ
                 rigidbody.drag = 0;
-                if (maxMoveSpeed == normalSpeed)
+                if (maxMoveSpeed == normalSpeed) //加速していない時
                 {
-                    int key = 0;
+                    int key = 0; //どちらに曲がるか
                     if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.A))
                     {
-                        isTurning = true;
+                        canTurn = true;
                         rigidbody.drag = turnFriction;
                         if (Input.GetKey(KeyCode.D)) key = 1;
                         if (Input.GetKey(KeyCode.A)) key = -1;
@@ -70,7 +70,7 @@ public class PlayerController : MonoBehaviour, IRankingDecider
             }
             else
             {
-                // 減速
+                // 減速する
                 rigidbody.drag = 2;
             }
             if (Input.GetKey(KeyCode.S) || finalWaypointIndex <= waypointIndex) isStopping = true;
@@ -105,12 +105,13 @@ public class PlayerController : MonoBehaviour, IRankingDecider
 
             if (onJumpBoard == true)
             {
+                // ジャンプ台で加速させる
                 rigidbody.AddForce(myTransform.forward * jumpBoardForce);
             }
         }
     }
 
-    // コースアウト時の処理
+    // コースアウトしたときに位置と向きをリセットする
     public void ResetCondition(float resetY)
     {
         waypointIndex--;
@@ -124,7 +125,7 @@ public class PlayerController : MonoBehaviour, IRankingDecider
         return waypointIndex;
     }
 
-    //次のwaypoinyまでの距離を返す
+    //次のwaypointまでの距離を返す
     public float MeasureWaypointDistance()
     {
         float distance = Vector3.Distance(myTransform.position, waypoints[waypointIndex].position);
@@ -136,6 +137,7 @@ public class PlayerController : MonoBehaviour, IRankingDecider
         myRanking = ranking;
     }
 
+    // 順位を表示するためにGameDirector.csから呼び出される
     public int ReturnRanking()
     {
         return myRanking;
@@ -152,7 +154,7 @@ public class PlayerController : MonoBehaviour, IRankingDecider
     {
         if (other.gameObject.tag == "Waypoint" && waypointIndex < finalWaypointIndex)
         {
-            // コライダーを3つ持つため3回の衝突判定に1回のみwaypointを更新する
+            // コライダーを3つ持つため、3回の衝突判定に1回のみwaypointを更新する
             collisionCounter++;
             if (collisionCounter % 3 == 0) waypointIndex++;
         }
@@ -161,7 +163,7 @@ public class PlayerController : MonoBehaviour, IRankingDecider
     void OnCollisionStay(Collision other)
     {
         if (other.gameObject.tag == "Course") onCourse = true;
-        if (other.gameObject.tag == "Terrain") onCourse = false;
+        if (other.gameObject.tag == "Terrain") onCourse = false; //terrainに触れたらコースアウト
     }
 
     void OnTriggerStay(Collider other)

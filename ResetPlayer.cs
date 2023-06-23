@@ -28,7 +28,7 @@ public class ResetPlayer : MonoBehaviour
         if (isCourseOut == true)
         {
             panel.SetActive(true);
-            slider.value += gainSpeed * Time.deltaTime;
+            slider.value += gainSpeed * Time.deltaTime; //ゲージの値を増やす
             if (1.0f <= slider.value)
             {
                 // プレイヤーの位置と向きをリセット

@@ -23,7 +23,7 @@ public class GameDirector : MonoBehaviour
     int finalWaypointIndex;
     float beginningTime; //ゲーム開始時の時刻
     float countTime;
-    float delayTime = 3.0f;
+    float delayTime = 1.0f; 
     
     void Start()
     {
@@ -36,16 +36,17 @@ public class GameDirector : MonoBehaviour
         goalPanel.SetActive(false);
         playerController = player.GetComponent<PlayerController>();
         finalWaypointIndex = waypoints.Length - 1;
-        beginningTime = Time.realtimeSinceStartup; //ゲーム外の時間
-        countTime = 3.0f;
+        beginningTime = Time.realtimeSinceStartup; //ゲーム外の時間で計測
+        countTime = 3.0f; 
         Time.timeScale = 0; //ゲーム内時間を停止
     }
 
     void Update()
     {
-        //３秒のカウントダウン後にゲームスタート
+        // 3秒のカウントダウン後にゲームスタート
         if (0 <= countTime)
         {
+            // 3秒前からテキストで表示できるようにdelayTime秒待ってからカウント開始
             float seconds = Time.realtimeSinceStartup - beginningTime - delayTime;
             if (0 <= seconds) countTime = 3.0f - seconds;
             countText.text = ((int)countTime).ToString();
@@ -58,12 +59,13 @@ public class GameDirector : MonoBehaviour
 
         if (playerController.ReturnWaypointIndex() < finalWaypointIndex)
         {
-            // 通り過ぎたwaypointの数が多い順にする
-            // waypointの数が同じ場合は次のwaypointまでの距離が近い順にする
+            // 通り過ぎたwaypointの数が多い方が速いため、waypointIndexの値が大きい順にする
+            // waypointIndexの値が同じ場合は次のwaypointまでの距離が近い順にする
             var currentOrder = rankingDeciderList.OrderByDescending(x => x.ReturnWaypointIndex()).ThenBy(x => x.MeasureWaypointDistance());
             int ranking = 0;
             foreach (var rankingDecider in currentOrder)
             {
+                // それぞれのキャラに順位を与える
                 ranking++;
                 rankingDecider.DecideRanking(ranking);
             }
@@ -71,18 +73,20 @@ public class GameDirector : MonoBehaviour
         }
         else
         {
-            // ゴールした時
+            // ゴールした時にプレイヤーの順位を表示する
             rankingPanel.SetActive(false);
             goalPanel.SetActive(true);
             finalRankingText.text = playerController.ReturnRanking().ToString() + "位";
         }
     }
 
+    // リトライを選択した時
     public void OnClickRetryButton()
     {
         SceneManager.LoadScene("gameScene");
     }
 
+    // タイトルへ戻るボタンを選択した時
     public void OnClickTitleButton()
     {
         SceneManager.LoadScene("startScene");

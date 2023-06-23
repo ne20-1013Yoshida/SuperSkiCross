@@ -5,22 +5,22 @@ using UnityEngine.AI;
 
 public class AgentController : MonoBehaviour, IRankingDecider
 {
-    Transform[] waypoints;
-    NavMeshAgent agent; //NavMeshAgentで動かす
+    Transform[] waypoints; //コースの屈折点をスタートから順に格納
+    NavMeshAgent agent;
     Rigidbody rigidbody;
     Transform myTransform;
-    Transform armature; //子オブジェクトである骨格
-    Vector3 beginningPosition;
-    int waypointIndex;
-    int myRanking;
-    int finalWaypointIndex;
+    Transform armature; //骨格（子オブジェクト）
+    Vector3 beginningPosition; //スタート時の座標
+    int waypointIndex; //次に通るwaypointのインデックス
+    int myRanking; //自分の順位
+    int finalWaypointIndex; //最後のwaypointのインデックス
     public float turnAngle; //次のwaypointへのy軸回転角度
     public float maxTurnAngle;
-    float jumpBoardForce = 60.0f; //ジャンプ台での前進させる力
-    float rotationY; //y軸の回転角度
     float moveForce = 40.0f; //前進させる力
     float maxMoveSpeed = 25.0f; //最高前進速度
-    bool agentSwitch; //agentの有効・無効
+    float jumpBoardForce = 60.0f; //ジャンプ台での前進させる力
+    float rotationY; //y軸の回転角度
+    bool agentSwitch; //agentの有効・無効を決定する
     bool onJumpBoard; //ジャンプ台に乗っているかどうか
  
     void Start()
@@ -41,7 +41,8 @@ public class AgentController : MonoBehaviour, IRankingDecider
  
     void Update()
     {
-        // waypointの更新
+        // waypointを目指して進む
+        // ある程度近付いたら次のwaypointを目指す
         if (agent.enabled == true)
         {
             if (MeasureWaypointDistance() <= agent.stoppingDistance)
@@ -61,7 +62,7 @@ public class AgentController : MonoBehaviour, IRankingDecider
     {
         if (agent.enabled == false)
         {
-            // 真っ直ぐ進む
+            // NavMeshAgentが無効時は真っ直ぐ進む
             float currentSpeed = rigidbody.velocity.magnitude;
             if (currentSpeed <= maxMoveSpeed) rigidbody.AddForce(myTransform.forward * moveForce);
             myTransform.localEulerAngles = new Vector3(myTransform.eulerAngles.x, rotationY, 0);
@@ -69,22 +70,25 @@ public class AgentController : MonoBehaviour, IRankingDecider
 
         if (onJumpBoard == true)
         {
+            // ジャンプ台で加速させる
             rigidbody.AddForce(myTransform.forward * jumpBoardForce);
         }
     }
 
+    // waypointIndexを返す（順位を決めるためにGameDirector.csから呼び出される）
     public float ReturnWaypointIndex()
     {
         return waypointIndex;
     }
 
-    //次のwaypoinyまでの距離を返す
+    // 次のwaypointまでの距離を返す（順位を決めるためにGameDirector.csからも呼び出される）
     public float MeasureWaypointDistance()
     {
         float distance = Vector3.Distance(myTransform.position, waypoints[waypointIndex].position);
         return distance;
     }
 
+    // GameDirector.csで決まった順位をmyRankingに代入
     public void DecideRanking(int ranking)
     {
         myRanking = ranking;
@@ -110,14 +114,14 @@ public class AgentController : MonoBehaviour, IRankingDecider
                 float rad = Mathf.Atan2(waypointDelta.y, currentWaypointVector.magnitude);
                 float slopeAngle = rad * Mathf.Rad2Deg;
                 armature.eulerAngles = new Vector3(-slopeAngle, armature.eulerAngles.y, armature.eulerAngles.z);
-                // 次のwaypointへの回転角度を計算
+                // 次のwaypointへのy回転角度を計算
                 turnAngle = Vector3.SignedAngle(waypoints[waypointIndex - 1].forward, currentWaypointVector, Vector3.up);
             }
         }
 
         if (other.gameObject.tag == "AgentSwitch")
         {
-            // NavMeshAgentをジャンプ台前で無効、後で有効化
+            // NavMeshAgentをジャンプ台前で無効化し、着地後に有効化する
             rotationY = myTransform.eulerAngles.y;
             agentSwitch = !agentSwitch;
         }
